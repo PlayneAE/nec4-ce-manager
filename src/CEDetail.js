@@ -1,15 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 
 function CEDetail({ ce, onClose, onUpdated }) {
   const [timelineEvents, setTimelineEvents] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTimeline()
-  }, [ce.id, fetchTimeline]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function fetchTimeline() {
+  const fetchTimeline = useCallback(async () => {
     const { data } = await supabase
       .from('ce_timeline_events')
       .select('*')
@@ -17,23 +13,40 @@ function CEDetail({ ce, onClose, onUpdated }) {
       .order('event_date', { ascending: true })
     setTimelineEvents(data || [])
     setLoading(false)
+  }, [ce.id])
+
+  useEffect(() => {
+    fetchTimeline()
+  }, [fetchTimeline])
+
+  function daysRemaining(dateString) {
+    if (!dateString) return null
+    const today = new Date()
+    const due = new Date(dateString)
+    return Math.ceil((due - today) / (1000 * 60 * 60 * 24))
   }
+
+  const dueDate = ce.quotation_due_date || ce.pm_reply_due_date
+  const days = daysRemaining(dueDate)
+  const isDeemed = ce.status === 'pm_reply_due' && days !== null && days < 0
 
   async function advanceStage() {
     const transitions = {
-      draft: 'notified',
-      notified: 'quotation_due',
-      quotation_due: 'quoted',
-      quoted: 'pm_reply_due',
-      pm_reply_due: 'implemented',
+      draft:             'notified',
+      notified:          'quotation_due',
+      quotation_due:     'quoted',
+      quoted:            'pm_reply_due',
+      pm_reply_due:      isDeemed ? 'deemed_acceptance' : 'implemented',
+      deemed_acceptance: 'implemented',
     }
 
     const stageLabels = {
-      draft: { label: 'CE notified', clause: '61.3' },
-      notified: { label: 'Quotation instructed', clause: '62.1' },
-      quotation_due: { label: 'Quotation submitted', clause: '62.3' },
-      quoted: { label: 'PM reply received', clause: '62.3' },
-      pm_reply_due: { label: 'CE implemented', clause: '65.1' },
+      draft:             { label: 'CE notified', clause: '61.3' },
+      notified:          { label: 'Quotation instructed', clause: '62.1' },
+      quotation_due:     { label: 'Quotation submitted', clause: '62.3' },
+      quoted:            { label: 'PM reply received', clause: '62.3' },
+      pm_reply_due:      isDeemed ? { label: 'Clause 62.6 notice issued', clause: '62.6' } : { label: 'PM reply received', clause: '62.3' },
+      deemed_acceptance: { label: 'CE deemed accepted', clause: '62.6' },
     }
 
     const nextStatus = transitions[ce.status]
@@ -49,46 +62,47 @@ function CEDetail({ ce, onClose, onUpdated }) {
       nec4_clause: info.clause,
       event_date: today,
       deadline_date: ce.quotation_due_date || ce.pm_reply_due_date,
-      deadline_met: true,
+      deadline_met: !isDeemed,
       recorded_by: user.id,
     })
 
+    const updateData = { status: nextStatus }
+
+    if (ce.status === 'pm_reply_due' && isDeemed) {
+      const newDeadline = new Date()
+      newDeadline.setDate(newDeadline.getDate() + 14)
+      updateData.pm_reply_due_date = newDeadline.toISOString().split('T')[0]
+    }
+
     await supabase
       .from('compensation_events')
-      .update({ status: nextStatus })
+      .update(updateData)
       .eq('id', ce.id)
 
     onUpdated()
   }
 
-  function daysRemaining(dateString) {
-    if (!dateString) return null
-    const today = new Date()
-    const due = new Date(dateString)
-    return Math.ceil((due - today) / (1000 * 60 * 60 * 24))
-  }
-
   const statusColors = {
-    draft:         { bg: '#f1efe8', color: '#5f5e5a' },
-    notified:      { bg: '#e6f1fb', color: '#185fa5' },
-    quotation_due: { bg: '#faeeda', color: '#854f0b' },
-    quoted:        { bg: '#eaf3de', color: '#3b6d11' },
-    pm_reply_due:  { bg: '#fcebeb', color: '#a32d2d' },
-    implemented:   { bg: '#e1f5ee', color: '#0f6e56' },
-    disputed:      { bg: '#fbeaf0', color: '#993556' },
+    draft:             { bg: '#f1efe8', color: '#5f5e5a' },
+    notified:          { bg: '#e6f1fb', color: '#185fa5' },
+    quotation_due:     { bg: '#faeeda', color: '#854f0b' },
+    quoted:            { bg: '#eaf3de', color: '#3b6d11' },
+    pm_reply_due:      { bg: '#fcebeb', color: '#a32d2d' },
+    deemed_acceptance: { bg: '#faeeda', color: '#854f0b' },
+    implemented:       { bg: '#e1f5ee', color: '#0f6e56' },
+    disputed:          { bg: '#fbeaf0', color: '#993556' },
   }
 
   const nextActionLabels = {
-    draft:         'Mark as notified',
-    notified:      'Instruction to quote received',
-    quotation_due: 'Quotation submitted',
-    quoted:        'PM reply received',
-    pm_reply_due:  'Mark as implemented',
+    draft:             'Mark as notified',
+    notified:          'Instruction to quote received',
+    quotation_due:     'Quotation submitted',
+    quoted:            'PM reply received',
+    pm_reply_due:      isDeemed ? 'Issue clause 62.6 notice' : 'PM reply received',
+    deemed_acceptance: 'Mark as deemed accepted',
   }
 
   const sc = statusColors[ce.status] || statusColors.draft
-  const dueDate = ce.quotation_due_date || ce.pm_reply_due_date
-  const days = daysRemaining(dueDate)
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
@@ -100,9 +114,14 @@ function CEDetail({ ce, onClose, onUpdated }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                 <span style={{ fontWeight: 500, fontSize: '16px' }}>{ce.reference}</span>
-                <span style={{ ...sc, fontSize: '11px', fontWeight: 500, padding: '3px 8px', borderRadius: '4px' }}>
+                <span style={{ background: sc.bg, color: sc.color, fontSize: '11px', fontWeight: 500, padding: '3px 8px', borderRadius: '4px' }}>
                   {ce.status.replace(/_/g, ' ')}
                 </span>
+                {isDeemed && (
+                  <span style={{ background: '#fcebeb', color: '#a32d2d', fontSize: '11px', fontWeight: 500, padding: '3px 8px', borderRadius: '4px' }}>
+                    Deemed acceptance available
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: '13px', color: '#5f5e5a', marginBottom: '4px' }}>{ce.description}</div>
               <div style={{ fontSize: '12px', color: '#888780' }}>
@@ -127,7 +146,7 @@ function CEDetail({ ce, onClose, onUpdated }) {
               timelineEvents.map((event, i) => (
                 <div key={event.id} style={{ display: 'flex', gap: '12px', marginBottom: '16px', position: 'relative' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0f6e56', flexShrink: 0, marginTop: '3px' }} />
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: event.deadline_met ? '#0f6e56' : '#a32d2d', flexShrink: 0, marginTop: '3px' }} />
                     {i < timelineEvents.length - 1 && (
                       <div style={{ width: '1px', background: '#e0ddd5', flex: 1, marginTop: '4px' }} />
                     )}
@@ -146,7 +165,6 @@ function CEDetail({ ce, onClose, onUpdated }) {
               ))
             )}
 
-            {/* Next action */}
             {nextActionLabels[ce.status] && (
               <div style={{ marginTop: '8px' }}>
                 <div style={{ display: 'flex', gap: '12px' }}>
@@ -212,7 +230,7 @@ function CEDetail({ ce, onClose, onUpdated }) {
               <div style={{ borderTop: '0.5px solid #e0ddd5', paddingTop: '16px' }}>
                 <button
                   onClick={advanceStage}
-                  style={{ width: '100%', padding: '8px', fontSize: '12px', fontWeight: 500, background: '#2c2c2a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '8px', fontSize: '12px', fontWeight: 500, background: isDeemed ? '#a32d2d' : '#2c2c2a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                 >
                   {nextActionLabels[ce.status]}
                 </button>
