@@ -7,7 +7,7 @@ function CEDetail({ ce, onClose, onUpdated }) {
 
   useEffect(() => {
     fetchTimeline()
-  }, [ce.id])
+  }, [ce.id, fetchTimeline]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchTimeline() {
     const { data } = await supabase
