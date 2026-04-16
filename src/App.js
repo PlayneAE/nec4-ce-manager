@@ -5,6 +5,8 @@ import './App.css'
 import NewCEForm from './NewCEForm'
 import NewSubcontractForm from './NewSubcontractForm'
 import CEDetail from './CEDetail'
+import ContractAmendments from './ContractAmendments'
+import SubcontractsList from './SubcontractsList'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -13,20 +15,33 @@ function App() {
   const [showNewCE, setShowNewCE] = useState(false)
   const [showNewSubcontract, setShowNewSubcontract] = useState(false)
   const [selectedCE, setSelectedCE] = useState(null)
+  const [selectedSubcontract, setSelectedSubcontract] = useState(null)
+  const [userRole, setUserRole] = useState(null)
+  const [showSubcontractsList, setShowSubcontractsList] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
+      if (session) fetchUserRole(session.user.id)
     })
-
     supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
+      if (session) fetchUserRole(session.user.id)
     })
   }, [])
 
   useEffect(() => {
     if (session) fetchCEs()
   }, [session])
+
+  async function fetchUserRole(userId) {
+    const { data } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    if (data) setUserRole(data.role)
+  }
 
   async function fetchCEs() {
     const { data, error } = await supabase
@@ -41,7 +56,6 @@ function App() {
         )
       `)
       .order('created_at', { ascending: false })
-
     if (error) {
       console.error('Error fetching CEs:', error)
     } else {
@@ -54,19 +68,19 @@ function App() {
     if (!dateString) return null
     const today = new Date()
     const due = new Date(dateString)
-    const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24))
-    return diff
+    return Math.ceil((due - today) / (1000 * 60 * 60 * 24))
   }
 
   function statusBadge(status) {
     const styles = {
-      draft:          { background: '#f1efe8', color: '#5f5e5a' },
-      notified:       { background: '#e6f1fb', color: '#185fa5' },
-      quotation_due:  { background: '#faeeda', color: '#854f0b' },
-      quoted:         { background: '#eaf3de', color: '#3b6d11' },
-      pm_reply_due:   { background: '#fcebeb', color: '#a32d2d' },
-      implemented:    { background: '#e1f5ee', color: '#0f6e56' },
-      disputed:       { background: '#fbeaf0', color: '#993556' },
+      draft:             { background: '#f1efe8', color: '#5f5e5a' },
+      notified:          { background: '#e6f1fb', color: '#185fa5' },
+      quotation_due:     { background: '#faeeda', color: '#854f0b' },
+      quoted:            { background: '#eaf3de', color: '#3b6d11' },
+      pm_reply_due:      { background: '#fcebeb', color: '#a32d2d' },
+      deemed_acceptance: { background: '#faeeda', color: '#854f0b' },
+      implemented:       { background: '#e1f5ee', color: '#0f6e56' },
+      disputed:          { background: '#fbeaf0', color: '#993556' },
     }
     const s = styles[status] || styles.draft
     return (
@@ -118,18 +132,30 @@ function App() {
             </span>
           )}
         </div>
-        <button
-          onClick={() => supabase.auth.signOut()}
-          style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
-        >
-          Sign out
-        </button>
-        <button
-  onClick={() => setShowNewSubcontract(true)}
-  style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
->
-  + New subcontract
-</button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {(userRole === 'pm' || userRole === 'admin') && (
+            <button
+              onClick={() => setShowNewSubcontract(true)}
+              style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
+            >
+              + New subcontract
+            </button>
+          )}
+          {(userRole === 'pm' || userRole === 'admin') && (
+  <button
+    onClick={() => setShowSubcontractsList(true)}
+    style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
+  >
+    Subcontracts
+  </button>
+)}
+          <button
+            onClick={() => supabase.auth.signOut()}
+            style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 32px' }}>
@@ -154,12 +180,14 @@ function App() {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '0.5px solid #e0ddd5' }}>
             <span style={{ fontWeight: 500, fontSize: '14px' }}>Compensation event register</span>
-            <button
-              style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer' }}
-              onClick={() => setShowNewCE(true)}
-            >
-              + New CE
-            </button>
+            {(userRole === 'pm' || userRole === 'admin') && (
+              <button
+                style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer' }}
+                onClick={() => setShowNewCE(true)}
+              >
+                + New CE
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '80px 100px 1fr 140px 120px 100px', padding: '8px 20px', borderBottom: '0.5px solid #e0ddd5', background: '#f9f8f5' }}>
@@ -186,19 +214,18 @@ function App() {
                   onClick={() => setSelectedCE(ce)}
                 >
                   <span style={{ fontWeight: 500, fontSize: '13px' }}>{ce.reference}</span>
+                  <span style={{ fontSize: '13px', color: '#888780' }}>{ce.subcontracts?.reference || '—'}</span>
                   <span style={{ fontSize: '13px', color: '#3d3d3a', paddingRight: '16px' }}>{ce.description}</span>
                   <span>{statusBadge(ce.status)}</span>
                   <span style={{ fontSize: '13px', color: '#888780' }}>{dueDate ? new Date(dueDate).toLocaleDateString('en-GB') : '—'}</span>
                   <span style={{ fontSize: '13px' }}>{daysLabel(days)}</span>
-                  <span style={{ fontSize: '13px', color: '#888780' }}>
-  {ce.subcontracts?.reference || '—'}
-</span>
                 </div>
               )
             })
           )}
         </div>
       </div>
+
       {showNewCE && (
         <NewCEForm
           onClose={() => setShowNewCE(false)}
@@ -206,16 +233,31 @@ function App() {
         />
       )}
       {showNewSubcontract && (
-  <NewSubcontractForm
-    onClose={() => setShowNewSubcontract(false)}
-    onSaved={() => {}}
-  />
-)}
-{selectedCE && (
-  <CEDetail
-    ce={selectedCE}
-    onClose={() => setSelectedCE(null)}
-    onUpdated={() => { fetchCEs(); setSelectedCE(null) }}
+        <NewSubcontractForm
+          onClose={() => setShowNewSubcontract(false)}
+          onSaved={() => {}}
+        />
+      )}
+      {selectedCE && (
+        <CEDetail
+          ce={selectedCE}
+          onClose={() => setSelectedCE(null)}
+          onUpdated={() => { fetchCEs(); setSelectedCE(null) }}
+        />
+      )}
+      {selectedSubcontract && (
+        <ContractAmendments
+          subcontract={selectedSubcontract}
+          onClose={() => setSelectedSubcontract(null)}
+        />
+      )}
+      {showSubcontractsList && (
+  <SubcontractsList
+    onClose={() => setShowSubcontractsList(false)}
+    onSelectSubcontract={(sub) => {
+      setSelectedSubcontract(sub)
+      setShowSubcontractsList(false)
+    }}
   />
 )}
     </div>
