@@ -7,6 +7,7 @@ import NewSubcontractForm from './NewSubcontractForm'
 import CEDetail from './CEDetail'
 import ContractAmendments from './ContractAmendments'
 import SubcontractsList from './SubcontractsList'
+import EarlyWarnings from './EarlyWarnings'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -18,6 +19,7 @@ function App() {
   const [selectedSubcontract, setSelectedSubcontract] = useState(null)
   const [userRole, setUserRole] = useState(null)
   const [showSubcontractsList, setShowSubcontractsList] = useState(false)
+  const [showEarlyWarnings, setShowEarlyWarnings] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -149,6 +151,12 @@ function App() {
     Subcontracts
   </button>
 )}
+<button
+  onClick={() => setShowEarlyWarnings(true)}
+  style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
+>
+  Early warnings
+</button>
           <button
             onClick={() => supabase.auth.signOut()}
             style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
@@ -258,6 +266,12 @@ function App() {
       setSelectedSubcontract(sub)
       setShowSubcontractsList(false)
     }}
+  />
+)}
+{showEarlyWarnings && (
+  <EarlyWarnings
+    onClose={() => setShowEarlyWarnings(false)}
+    userRole={userRole}
   />
 )}
     </div>
