@@ -8,6 +8,7 @@ import CEDetail from './CEDetail'
 import ContractAmendments from './ContractAmendments'
 import SubcontractsList from './SubcontractsList'
 import EarlyWarnings from './EarlyWarnings'
+import PaymentCycles from './PaymentCycles'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -20,6 +21,7 @@ function App() {
   const [userRole, setUserRole] = useState(null)
   const [showSubcontractsList, setShowSubcontractsList] = useState(false)
   const [showEarlyWarnings, setShowEarlyWarnings] = useState(false)
+  const [showPaymentCycles, setShowPaymentCycles] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -157,6 +159,12 @@ function App() {
 >
   Early warnings
 </button>
+<button
+  onClick={() => setShowPaymentCycles(true)}
+  style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
+>
+  Payments
+</button>
           <button
             onClick={() => supabase.auth.signOut()}
             style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
@@ -271,6 +279,12 @@ function App() {
 {showEarlyWarnings && (
   <EarlyWarnings
     onClose={() => setShowEarlyWarnings(false)}
+    userRole={userRole}
+  />
+)}
+{showPaymentCycles && (
+  <PaymentCycles
+    onClose={() => setShowPaymentCycles(false)}
     userRole={userRole}
   />
 )}
