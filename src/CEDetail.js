@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabaseClient'
+import Documents from './Documents'
 
 function CEDetail({ ce, onClose, onUpdated }) {
   const [timelineEvents, setTimelineEvents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showDocuments, setShowDocuments] = useState(false)
 
   const fetchTimeline = useCallback(async () => {
     const { data } = await supabase
@@ -128,7 +130,15 @@ function CEDetail({ ce, onClose, onUpdated }) {
                 {ce.subcontracts?.reference} — {ce.subcontracts?.subcontractor_name}
               </div>
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888780', marginLeft: '16px' }}>×</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: '16px' }}>
+              <button
+                onClick={() => setShowDocuments(true)}
+                style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#2c2c2a' }}
+              >
+                Documents
+              </button>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888780' }}>×</button>
+            </div>
           </div>
         </div>
 
@@ -239,6 +249,14 @@ function CEDetail({ ce, onClose, onUpdated }) {
 
           </div>
         </div>
+
+        {showDocuments && (
+          <Documents
+            ceId={ce.id}
+            onClose={() => setShowDocuments(false)}
+          />
+        )}
+
       </div>
     </div>
   )
