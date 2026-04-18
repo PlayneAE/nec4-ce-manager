@@ -11,6 +11,7 @@ import EarlyWarnings from './EarlyWarnings'
 import PaymentCycles from './PaymentCycles'
 import Documents from './Documents'
 import './App.css'
+import InviteSubcontractor from './InviteSubcontractor'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -22,6 +23,7 @@ function App() {
   const [showNewSubcontract, setShowNewSubcontract] = useState(false)
   const [selectedCE, setSelectedCE] = useState(null)
   const [selectedSubcontract, setSelectedSubcontract] = useState(null)
+  const [showInvite, setShowInvite] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -245,11 +247,21 @@ function App() {
 
           {/* Settings */}
           {activeSection === 'settings' && (userRole === 'pm' || userRole === 'admin') && (
-            <div style={{ background: '#fff', border: '0.5px solid #e0ddd5', borderRadius: '12px', padding: '24px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Settings</div>
-              <div style={{ fontSize: '13px', color: '#888780' }}>Settings and configuration coming soon.</div>
-            </div>
-          )}
+  <div>
+    <div style={{ background: '#fff', border: '0.5px solid #e0ddd5', borderRadius: '12px', padding: '24px', marginBottom: '16px' }}>
+      <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>Subcontractor access</div>
+      <div style={{ fontSize: '13px', color: '#888780', marginBottom: '16px' }}>
+        Invite subcontractors to access their subcontract data, submit CEs, EWNs and AFPs.
+      </div>
+      <button
+        onClick={() => setShowInvite(true)}
+        style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer' }}
+      >
+        + Invite subcontractor
+      </button>
+    </div>
+  </div>
+)}
 
         </div>
       </div>
@@ -280,6 +292,11 @@ function App() {
           onClose={() => setSelectedSubcontract(null)}
         />
       )}
+      {showInvite && (
+  <InviteSubcontractor
+    onClose={() => setShowInvite(false)}
+  />
+)}
     </div>
   )
 }
