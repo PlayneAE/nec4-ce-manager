@@ -5,6 +5,7 @@ import SubcontractDashboard from './SubcontractDashboard'
 function HomePage({ onNavigate, userRole }) {
   const [project, setProject] = useState(null)
   const [subcontracts, setSubcontracts] = useState([])
+  const [subcontractHealth, setSubcontractHealth] = useState({})
   const [stats, setStats] = useState({
     totalCEs: 0,
     overdueCEs: 0,
@@ -44,13 +45,54 @@ function HomePage({ onNavigate, userRole }) {
     ])
 
     setProject(projectRes.data)
-    setSubcontracts(subsRes.data || [])
+    const subs = subsRes.data || []
+    setSubcontracts(subs)
 
     const ces = cesRes.data || []
     const ewns = ewnsRes.data || []
     const payments = paymentsRes.data || []
 
     const today = new Date()
+
+    // Calculate health per subcontract
+    const health = {}
+    subs.forEach(sub => {
+      const subCEs = ces.filter(ce => ce.subcontract_id === sub.id)
+      const subEWNs = ewns.filter(ew => ew.subcontract_id === sub.id)
+      const subPayments = payments.filter(p => p.subcontract_id === sub.id)
+
+      const overdueCEs = subCEs.filter(ce => {
+        const dueDate = ce.quotation_due_date || ce.pm_reply_due_date
+        if (!dueDate || ce.status === 'implemented') return false
+        return new Date(dueDate) < today
+      }).length
+
+      const urgentCEs = subCEs.filter(ce => {
+        const dueDate = ce.quotation_due_date || ce.pm_reply_due_date
+        if (!dueDate || ce.status === 'implemented') return false
+        const days = Math.ceil((new Date(dueDate) - today) / (1000 * 60 * 60 * 24))
+        return days >= 0 && days <= 7
+      }).length
+
+      const overduePayments = subPayments.filter(p => {
+        if (p.status === 'paid') return false
+        return new Date(p.final_payment_date) < today
+      }).length
+
+      const deemedAcceptance = subCEs.filter(ce => ce.status === 'deemed_acceptance').length
+      const openEWNs = subEWNs.filter(ew => ew.status === 'open' || ew.status === 'rrm_requested').length
+
+      if (overdueCEs > 0 || overduePayments > 0 || deemedAcceptance > 0) {
+        health[sub.id] = 'red'
+      } else if (urgentCEs > 0 || openEWNs > 0) {
+        health[sub.id] = 'amber'
+      } else {
+        health[sub.id] = 'green'
+      }
+    })
+    setSubcontractHealth(health)
+
+    // Overall stats
     const overdueCEs = ces.filter(ce => {
       const dueDate = ce.quotation_due_date || ce.pm_reply_due_date
       if (!dueDate || ce.status === 'implemented') return false
@@ -72,10 +114,6 @@ function HomePage({ onNavigate, userRole }) {
     setLoading(false)
   }
 
-  function getSubcontractHealth(subId) {
-    return 'green'
-  }
-
   const healthColor = {
     green: '#0f6e56',
     amber: '#854f0b',
@@ -86,6 +124,18 @@ function HomePage({ onNavigate, userRole }) {
     green: '#e1f5ee',
     amber: '#faeeda',
     red: '#fcebeb',
+  }
+
+  const healthLabel = {
+    green: 'On track',
+    amber: 'Attention',
+    red: 'Action required',
+  }
+
+  const healthDot = {
+    green: '●',
+    amber: '●',
+    red: '●',
   }
 
   if (loading) return (
@@ -128,24 +178,43 @@ function HomePage({ onNavigate, userRole }) {
       </div>
 
       {/* Subcontract cards */}
-      <div style={{ marginBottom: '8px', fontSize: '12px', fontWeight: 500, color: '#5f5e5a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      <div style={{ marginBottom: '12px', fontSize: '12px', fontWeight: 500, color: '#5f5e5a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
         Subcontracts
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: '16px' }}>
         {subcontracts.map(sub => {
-          const health = getSubcontractHealth(sub.id)
+          const health = subcontractHealth[sub.id] || 'green'
           return (
             <div
               key={sub.id}
-              style={{ background: '#fff', border: '0.5px solid #e0ddd5', borderRadius: '12px', padding: '20px', cursor: 'pointer' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#b4b2a9'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = '#e0ddd5'}
+              style={{
+                background: '#fff',
+                border: `0.5px solid #e0ddd5`,
+                borderLeft: `3px solid ${healthColor[health]}`,
+                borderRadius: '12px',
+                padding: '20px',
+                cursor: 'pointer',
+                transition: 'box-shadow 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
               onClick={() => setSelectedDashboard(sub)}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontWeight: 500, fontSize: '14px' }}>{sub.reference}</span>
-                <span style={{ fontSize: '11px', background: healthBg[health], color: healthColor[health], padding: '2px 8px', borderRadius: '4px', fontWeight: 500 }}>
-                  Active
+                <span style={{
+                  fontSize: '11px',
+                  background: healthBg[health],
+                  color: healthColor[health],
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span style={{ fontSize: '8px' }}>{healthDot[health]}</span>
+                  {healthLabel[health]}
                 </span>
               </div>
               <div style={{ fontSize: '13px', color: '#3d3d3a', marginBottom: '12px' }}>{sub.subcontractor_name}</div>

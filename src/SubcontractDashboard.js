@@ -1,3 +1,4 @@
+import ReportGenerator from './ReportGenerator'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 
@@ -7,6 +8,7 @@ function SubcontractDashboard({ subcontract, onClose, onNavigate }) {
   const [payments, setPayments] = useState([])
   const [amendments, setAmendments] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showReport, setShowReport] = useState(false)
 
   const fetchData = useCallback(async () => {
     const [cesRes, ewnsRes, paymentsRes, amendmentsRes] = await Promise.all([
@@ -105,18 +107,26 @@ function SubcontractDashboard({ subcontract, onClose, onNavigate }) {
 
         {/* Header */}
         <div style={{ background: '#fff', borderBottom: '0.5px solid #e0ddd5', padding: '20px 28px', borderRadius: '12px 12px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontWeight: 500, fontSize: '16px', marginBottom: '4px' }}>
-              {subcontract.reference} — {subcontract.subcontractor_name}
-            </div>
-            <div style={{ fontSize: '12px', color: '#888780' }}>
-              NEC4 Option {subcontract.nec_option}
-              {subcontract.commencement_date && ` · Started ${new Date(subcontract.commencement_date).toLocaleDateString('en-GB')}`}
-              {subcontract.completion_date && ` · Completion ${new Date(subcontract.completion_date).toLocaleDateString('en-GB')}`}
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888780' }}>×</button>
-        </div>
+  <div>
+    <div style={{ fontWeight: 500, fontSize: '16px', marginBottom: '4px' }}>
+      {subcontract.reference} — {subcontract.subcontractor_name}
+    </div>
+    <div style={{ fontSize: '12px', color: '#888780' }}>
+      NEC4 Option {subcontract.nec_option}
+      {subcontract.commencement_date && ` · Started ${new Date(subcontract.commencement_date).toLocaleDateString('en-GB')}`}
+      {subcontract.completion_date && ` · Completion ${new Date(subcontract.completion_date).toLocaleDateString('en-GB')}`}
+    </div>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+    <button
+      onClick={() => setShowReport(true)}
+      style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#2c2c2a' }}
+    >
+      Export PDF
+    </button>
+    <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888780' }}>×</button>
+  </div>
+</div>
 
         {/* Dashboard grid */}
         <div style={{ padding: '24px 28px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
@@ -268,6 +278,13 @@ function SubcontractDashboard({ subcontract, onClose, onNavigate }) {
 
         </div>
       </div>
+      {showReport && (
+  <ReportGenerator
+    subcontract={subcontract}
+    project={null}
+    onClose={() => setShowReport(false)}
+  />
+)}
     </div>
   )
 }
