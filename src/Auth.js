@@ -47,7 +47,7 @@ function Auth() {
     <div style={{ minHeight: '100vh', background: '#f9f8f5', fontFamily: 'system-ui, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#fff', border: '0.5px solid #e0ddd5', borderRadius: '12px', padding: '40px', width: '100%', maxWidth: '400px' }}>
 
-        <h1 style={{ fontSize: '18px', fontWeight: 500, marginBottom: '8px', marginTop: 0 }}>NEC4 CE Manager</h1>
+        <h1 style={{ fontSize: '18px', fontWeight: 500, marginBottom: '8px', marginTop: 0 }}>SubContract Pro</h1>
         <p style={{ fontSize: '13px', color: '#888780', marginBottom: '28px', marginTop: 0 }}>
           {isSignUp ? 'Create your account' : 'Sign in to your account'}
         </p>

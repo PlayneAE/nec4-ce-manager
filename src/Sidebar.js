@@ -30,7 +30,7 @@ function Sidebar({ activeSection, onNavigate, userRole, onSignOut }) {
       <div style={{ padding: collapsed ? '16px 0' : '16px', display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', borderBottom: '0.5px solid rgba(255,255,255,0.1)', height: '56px', boxSizing: 'border-box' }}>
         {!collapsed && (
           <span style={{ color: '#fff', fontWeight: 500, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-  NEC4 Manager
+  SubContract Pro
 </span>
         )}
         <button
