@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import SubcontractDashboard from './SubcontractDashboard'
 
-function SubcontractsList({ onSelectSubcontract, inline, onClose }) {
+function SubcontractsList({ onSelectSubcontract, inline, onClose, onNavigate }) {
   const [subcontracts, setSubcontracts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedDashboard, setSelectedDashboard] = useState(null)
 
   useEffect(() => {
     fetchSubcontracts()
@@ -26,12 +28,7 @@ function SubcontractsList({ onSelectSubcontract, inline, onClose }) {
         <div style={{ padding: '40px', textAlign: 'center', color: '#888780', fontSize: '14px' }}>No subcontracts yet.</div>
       ) : (
         subcontracts.map(sub => (
-          <div key={sub.id}
-            style={{ padding: '16px 20px', borderBottom: '0.5px solid #f1efe8', cursor: 'pointer', background: '#fff' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f9f8f5'}
-            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-            onClick={() => onSelectSubcontract && onSelectSubcontract(sub)}
-          >
+          <div key={sub.id} style={{ padding: '16px 20px', borderBottom: '0.5px solid #f1efe8', background: '#fff' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ fontWeight: 500, fontSize: '14px' }}>{sub.reference}</span>
@@ -40,7 +37,7 @@ function SubcontractsList({ onSelectSubcontract, inline, onClose }) {
               <span style={{ fontSize: '12px', color: '#888780' }}>{sub.projects?.name}</span>
             </div>
             <div style={{ fontSize: '13px', color: '#3d3d3a', marginBottom: '8px' }}>{sub.subcontractor_name}</div>
-            <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
               <div style={{ fontSize: '12px', color: '#888780' }}>
                 Quotation period: <span style={{ color: '#2c2c2a', fontWeight: 500 }}>{sub.quotation_period_weeks} weeks</span>
               </div>
@@ -53,8 +50,32 @@ function SubcontractsList({ onSelectSubcontract, inline, onClose }) {
                 </div>
               )}
             </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setSelectedDashboard(sub)}
+                style={{ fontSize: '11px', padding: '4px 12px', borderRadius: '4px', border: '0.5px solid #2c2c2a', background: '#2c2c2a', cursor: 'pointer', color: '#fff' }}
+              >
+                Dashboard
+              </button>
+              {onSelectSubcontract && (
+                <button
+                  onClick={() => onSelectSubcontract(sub)}
+                  style={{ fontSize: '11px', padding: '4px 12px', borderRadius: '4px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer', color: '#5f5e5a' }}
+                >
+                  Amendments
+                </button>
+              )}
+            </div>
           </div>
         ))
+      )}
+
+      {selectedDashboard && (
+        <SubcontractDashboard
+          subcontract={selectedDashboard}
+          onClose={() => setSelectedDashboard(null)}
+          onNavigate={onNavigate || (() => {})}
+        />
       )}
     </div>
   )

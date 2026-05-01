@@ -239,11 +239,12 @@ function App() {
 
           {/* Subcontracts */}
           {activeSection === 'subcontracts' && (
-            <SubcontractsList
-              onSelectSubcontract={(sub) => setSelectedSubcontract(sub)}
-              inline
-            />
-          )}
+  <SubcontractsList
+    onSelectSubcontract={(sub) => setSelectedSubcontract(sub)}
+    onNavigate={setActiveSection}
+    inline
+  />
+)}
 
           {/* Settings */}
           {activeSection === 'settings' && (userRole === 'pm' || userRole === 'admin') && (
