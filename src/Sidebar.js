@@ -4,11 +4,12 @@ function Sidebar({ activeSection, onNavigate, userRole, onSignOut }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const navItems = [
-    { id: 'dashboard', label: 'CE Register', icon: '▦' },
-    { id: 'early-warnings', label: 'Early Warnings', icon: '⚠' },
-    { id: 'payments', label: 'Payments', icon: '£' },
-    { id: 'subcontracts', label: 'Subcontracts', icon: '📋' },
-  ]
+  { id: 'home', label: 'Home', icon: '⌂' },
+  { id: 'dashboard', label: 'CE Register', icon: '▦' },
+  { id: 'early-warnings', label: 'Early Warnings', icon: '⚠' },
+  { id: 'payments', label: 'Payments', icon: '£' },
+  { id: 'subcontracts', label: 'Subcontracts', icon: '📋' },
+]
 
   const adminItems = [
     { id: 'settings', label: 'Settings', icon: '⚙' },

@@ -9,16 +9,16 @@ import ContractAmendments from './ContractAmendments'
 import SubcontractsList from './SubcontractsList'
 import EarlyWarnings from './EarlyWarnings'
 import PaymentCycles from './PaymentCycles'
-import Documents from './Documents'
-import './App.css'
 import InviteSubcontractor from './InviteSubcontractor'
+import HomePage from './HomePage'
+import './App.css'
 
 function App() {
   const [session, setSession] = useState(null)
   const [ces, setCes] = useState([])
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState(null)
-  const [activeSection, setActiveSection] = useState('dashboard')
+  const [activeSection, setActiveSection] = useState('home')
   const [showNewCE, setShowNewCE] = useState(false)
   const [showNewSubcontract, setShowNewSubcontract] = useState(false)
   const [selectedCE, setSelectedCE] = useState(null)
@@ -121,7 +121,6 @@ function App() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
 
-      {/* Sidebar */}
       <Sidebar
         activeSection={activeSection}
         onNavigate={setActiveSection}
@@ -129,18 +128,17 @@ function App() {
         onSignOut={() => supabase.auth.signOut()}
       />
 
-      {/* Main content */}
       <div style={{ flex: 1, background: '#f9f8f5', overflowY: 'auto' }}>
 
         {/* Top bar */}
         <div style={{ background: '#fff', borderBottom: '0.5px solid #e0ddd5', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontWeight: 500, fontSize: '15px' }}>
+              {activeSection === 'home' && 'Home'}
               {activeSection === 'dashboard' && 'Compensation event register'}
               {activeSection === 'early-warnings' && 'Early warning register'}
               {activeSection === 'payments' && 'Payment cycles'}
               {activeSection === 'subcontracts' && 'Subcontracts'}
-              {activeSection === 'documents' && 'Documents'}
               {activeSection === 'settings' && 'Settings'}
             </span>
             {activeSection === 'dashboard' && overdue > 0 && (
@@ -172,7 +170,15 @@ function App() {
         {/* Page content */}
         <div style={{ padding: '24px 32px' }}>
 
-          {/* Dashboard — CE Register */}
+          {/* Home */}
+          {activeSection === 'home' && (
+            <HomePage
+              onNavigate={setActiveSection}
+              userRole={userRole}
+            />
+          )}
+
+          {/* CE Register */}
           {activeSection === 'dashboard' && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: '12px', marginBottom: '24px' }}>
@@ -239,30 +245,30 @@ function App() {
 
           {/* Subcontracts */}
           {activeSection === 'subcontracts' && (
-  <SubcontractsList
-    onSelectSubcontract={(sub) => setSelectedSubcontract(sub)}
-    onNavigate={setActiveSection}
-    inline
-  />
-)}
+            <SubcontractsList
+              onSelectSubcontract={(sub) => setSelectedSubcontract(sub)}
+              onNavigate={setActiveSection}
+              inline
+            />
+          )}
 
           {/* Settings */}
           {activeSection === 'settings' && (userRole === 'pm' || userRole === 'admin') && (
-  <div>
-    <div style={{ background: '#fff', border: '0.5px solid #e0ddd5', borderRadius: '12px', padding: '24px', marginBottom: '16px' }}>
-      <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>Subcontractor access</div>
-      <div style={{ fontSize: '13px', color: '#888780', marginBottom: '16px' }}>
-        Invite subcontractors to access their subcontract data, submit CEs, EWNs and AFPs.
-      </div>
-      <button
-        onClick={() => setShowInvite(true)}
-        style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer' }}
-      >
-        + Invite subcontractor
-      </button>
-    </div>
-  </div>
-)}
+            <div>
+              <div style={{ background: '#fff', border: '0.5px solid #e0ddd5', borderRadius: '12px', padding: '24px', marginBottom: '16px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>Subcontractor access</div>
+                <div style={{ fontSize: '13px', color: '#888780', marginBottom: '16px' }}>
+                  Invite subcontractors to access their subcontract data, submit CEs, EWNs and AFPs.
+                </div>
+                <button
+                  onClick={() => setShowInvite(true)}
+                  style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', border: '0.5px solid #b4b2a9', background: '#fff', cursor: 'pointer' }}
+                >
+                  + Invite subcontractor
+                </button>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
@@ -294,10 +300,10 @@ function App() {
         />
       )}
       {showInvite && (
-  <InviteSubcontractor
-    onClose={() => setShowInvite(false)}
-  />
-)}
+        <InviteSubcontractor
+          onClose={() => setShowInvite(false)}
+        />
+      )}
     </div>
   )
 }
