@@ -21,6 +21,24 @@ function EWNDetail({ ew, onClose, onUpdated }) {
     fetchDocuments()
   }, [fetchDocuments])
 
+  const [activity, setActivity] = useState([])
+
+const fetchActivity = useCallback(async () => {
+  const { data } = await supabase
+    .from('ewn_activity')
+    .select(`
+      *,
+      users (full_name)
+    `)
+    .eq('ew_id', ew.id)
+    .order('created_at', { ascending: true })
+  setActivity(data || [])
+}, [ew.id])
+
+useEffect(() => {
+  fetchActivity()
+}, [fetchActivity])
+
   async function handleDownload(doc) {
     const { data } = await supabase.storage
       .from('documents')
@@ -29,9 +47,20 @@ function EWNDetail({ ew, onClose, onUpdated }) {
   }
 
   async function updateStatus(status) {
-    await supabase.from('early_warnings').update({ status }).eq('id', ew.id)
-    onUpdated()
-  }
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  await supabase.from('early_warnings').update({ status }).eq('id', ew.id)
+  
+  await supabase.from('ewn_activity').insert({
+    ew_id: ew.id,
+    action: 'Status updated',
+    previous_value: ew.status.replace(/_/g, ' '),
+    new_value: status.replace(/_/g, ' '),
+    created_by: user.id,
+  })
+  
+  onUpdated()
+}
 
   const statusColors = {
     open:          { background: '#e6f1fb', color: '#185fa5' },
@@ -194,6 +223,40 @@ function EWNDetail({ ew, onClose, onUpdated }) {
             onClose={() => { setShowRRMDocs(false); fetchDocuments() }}
           />
         )}
+
+        {/* Activity log */}
+<div style={{ borderTop: '0.5px solid #e0ddd5', paddingTop: '20px', marginTop: '8px' }}>
+  <div style={{ fontSize: '12px', fontWeight: 500, color: '#5f5e5a', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '12px' }}>Activity log</div>
+  {activity.length === 0 ? (
+    <div style={{ fontSize: '13px', color: '#888780' }}>No activity recorded yet.</div>
+  ) : (
+    activity.map((item, i) => (
+      <div key={item.id} style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#b4b2a9', flexShrink: 0, marginTop: '4px' }} />
+          {i < activity.length - 1 && (
+            <div style={{ width: '1px', background: '#e0ddd5', flex: 1, marginTop: '4px' }} />
+          )}
+        </div>
+        <div style={{ paddingBottom: '8px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 500, color: '#2c2c2a' }}>{item.action}</div>
+          {item.previous_value && item.new_value && (
+            <div style={{ fontSize: '12px', color: '#888780', marginTop: '2px' }}>
+              {item.previous_value} → {item.new_value}
+            </div>
+          )}
+          {item.notes && (
+            <div style={{ fontSize: '12px', color: '#888780', marginTop: '2px' }}>{item.notes}</div>
+          )}
+          <div style={{ fontSize: '11px', color: '#b4b2a9', marginTop: '4px' }}>
+            {new Date(item.created_at).toLocaleDateString('en-GB')} {new Date(item.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+            {item.users?.full_name && ` · ${item.users.full_name}`}
+          </div>
+        </div>
+      </div>
+    ))
+  )}
+</div>
 
       </div>
     </div>

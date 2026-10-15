@@ -72,6 +72,17 @@ function EarlyWarnings({ userRole, inline, onClose }) {
       .select()
       .single()
 
+      if (!error && ewData) {
+  const { data: { user } } = await supabase.auth.getUser()
+  await supabase.from('ewn_activity').insert({
+    ew_id: ewData.id,
+    action: 'EWN raised',
+    new_value: form.reference,
+    notes: `Raised by ${form.raised_by} under clause 15.1`,
+    created_by: user.id,
+  })
+}
+
     if (!error && ewData && file) {
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
@@ -102,10 +113,21 @@ function EarlyWarnings({ userRole, inline, onClose }) {
     setSaving(false)
   }
 
-  async function updateStatus(id, status) {
-    await supabase.from('early_warnings').update({ status }).eq('id', id)
-    fetchWarnings()
-  }
+  async function updateStatus(id, status, previousStatus) {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  await supabase.from('early_warnings').update({ status }).eq('id', id)
+  
+  await supabase.from('ewn_activity').insert({
+    ew_id: id,
+    action: 'Status updated',
+    previous_value: previousStatus.replace(/_/g, ' '),
+    new_value: status.replace(/_/g, ' '),
+    created_by: user.id,
+  })
+  
+  fetchWarnings()
+}
 
   const statusColors = {
     open:          { background: '#e6f1fb', color: '#185fa5' },
@@ -251,7 +273,7 @@ function EarlyWarnings({ userRole, inline, onClose }) {
                   {Array.isArray(ew.risk_type) ? ew.risk_type.map(r => riskTypeLabels[r]).join(', ') : riskTypeLabels[ew.risk_type]}
                 </span>
                 <span>
-                  <select value={ew.status} onChange={e => updateStatus(ew.id, e.target.value)} style={{ ...sc, fontSize: '11px', fontWeight: 500, padding: '3px 6px', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>
+                  <select value={ew.status} onChange={e => updateStatus(ew.id, e.target.value, ew.status)} style={{ ...sc, fontSize: '11px', fontWeight: 500, padding: '3px 6px', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>
                     <option value="open">Open</option>
                     <option value="rrm_requested">RRM requested</option>
                     <option value="rrm_held">RRM held</option>

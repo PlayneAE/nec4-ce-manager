@@ -1,3 +1,4 @@
+import ProgrammeSubmissions from './ProgrammeSubmissions'
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
@@ -140,6 +141,7 @@ function App() {
               {activeSection === 'payments' && 'Payment cycles'}
               {activeSection === 'subcontracts' && 'Subcontracts'}
               {activeSection === 'settings' && 'Settings'}
+              {activeSection === 'programme' && 'Programme submissions'}
             </span>
             {activeSection === 'dashboard' && overdue > 0 && (
               <span style={{ background: '#fcebeb', color: '#a32d2d', fontSize: '11px', fontWeight: 500, padding: '3px 8px', borderRadius: '4px' }}>
@@ -242,6 +244,11 @@ function App() {
           {activeSection === 'payments' && (
             <PaymentCycles userRole={userRole} inline />
           )}
+
+          {/* Programme */}
+{activeSection === 'programme' && (
+  <ProgrammeSubmissions userRole={userRole} inline />
+)}
 
           {/* Subcontracts */}
           {activeSection === 'subcontracts' && (

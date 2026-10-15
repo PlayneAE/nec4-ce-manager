@@ -8,6 +8,7 @@ function Sidebar({ activeSection, onNavigate, userRole, onSignOut }) {
   { id: 'dashboard', label: 'CE Register', icon: '▦' },
   { id: 'early-warnings', label: 'Early Warnings', icon: '⚠' },
   { id: 'payments', label: 'Payments', icon: '£' },
+   { id: 'programme', label: 'Programme', icon: '📅' },
   { id: 'subcontracts', label: 'Subcontracts', icon: '📋' },
 ]
 
