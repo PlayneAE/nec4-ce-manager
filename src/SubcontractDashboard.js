@@ -327,6 +327,11 @@ function SubcontractDashboard({ subcontract, onClose, onNavigate }) {
           </div>
 
         </div>
+        <DeadlineTimeline
+  ces={ces}
+  ewns={ewns}
+  payments={payments}
+/>
       </div>
       {showReport && (
   <ReportGenerator
@@ -335,6 +340,159 @@ function SubcontractDashboard({ subcontract, onClose, onNavigate }) {
     onClose={() => setShowReport(false)}
   />
 )}
+    </div>
+  )
+}
+
+function DeadlineTimeline({ ces, ewns, payments }) {
+  const today = new Date()
+  const thirtyDays = new Date(today)
+  thirtyDays.setDate(today.getDate() + 30)
+
+  // Collect all deadlines in next 30 days
+  const deadlines = []
+
+  ces.forEach(ce => {
+    const dueDate = ce.quotation_due_date || ce.pm_reply_due_date
+    if (!dueDate || ce.status === 'implemented') return
+    const due = new Date(dueDate)
+    if (due >= today && due <= thirtyDays) {
+      deadlines.push({
+        date: due,
+        label: ce.reference,
+        type: 'ce',
+        color: '#a32d2d',
+        detail: ce.status.replace(/_/g, ' ')
+      })
+    }
+  })
+
+  ewns.forEach(ew => {
+    if (!ew.rrm_date) return
+    const due = new Date(ew.rrm_date)
+    if (due >= today && due <= thirtyDays) {
+      deadlines.push({
+        date: due,
+        label: ew.reference,
+        type: 'ewn',
+        color: '#854f0b',
+        detail: 'RRM'
+      })
+    }
+  })
+
+  payments.forEach(p => {
+    if (p.status === 'paid') return
+    const due = new Date(p.final_payment_date)
+    if (due >= today && due <= thirtyDays) {
+      deadlines.push({
+        date: due,
+        label: `Cycle #${p.cycle_number}`,
+        type: 'payment',
+        color: '#185fa5',
+        detail: 'Final payment'
+      })
+    }
+    if (p.pay_less_notice_date) {
+      const pln = new Date(p.pay_less_notice_date)
+      if (pln >= today && pln <= thirtyDays) {
+        deadlines.push({
+          date: pln,
+          label: `Cycle #${p.cycle_number}`,
+          type: 'payment',
+          color: '#993556',
+          detail: 'Pay less notice'
+        })
+      }
+    }
+  })
+
+  deadlines.sort((a, b) => a.date - b.date)
+
+  // Generate 30 day strips
+  const days = []
+  for (let i = 0; i <= 30; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
+    days.push(d)
+  }
+
+  function formatDay(date) {
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  }
+
+  function getDeadlinesForDay(date) {
+    return deadlines.filter(d =>
+      d.date.toDateString() === date.toDateString()
+    )
+  }
+
+  return (
+    <div style={{ background: '#fff', border: '0.5px solid #e0ddd5', borderRadius: '12px', padding: '24px', marginTop: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 500, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Deadline timeline — next 30 days
+        </div>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          {[
+            { color: '#a32d2d', label: 'CE deadline' },
+            { color: '#854f0b', label: 'RRM' },
+            { color: '#185fa5', label: 'Payment' },
+            { color: '#993556', label: 'Pay less notice' },
+          ].map(l => (
+            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#888780' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: l.color }} />
+              {l.label}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {deadlines.length === 0 ? (
+        <div style={{ fontSize: '13px', color: '#888780', textAlign: 'center', padding: '24px 0' }}>
+          No deadlines in the next 30 days
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'flex', gap: '0', minWidth: '900px', position: 'relative' }}>
+            {days.map((day, i) => {
+              const dayDeadlines = getDeadlinesForDay(day)
+              const isToday = day.toDateString() === today.toDateString()
+              const showLabel = i === 0 || i === 7 || i === 14 || i === 21 || i === 30 || dayDeadlines.length > 0
+
+              return (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                  {/* Day label */}
+                  <div style={{ fontSize: '10px', color: isToday ? '#2c2c2a' : '#b4b2a9', fontWeight: isToday ? 500 : 400, marginBottom: '6px', whiteSpace: 'nowrap' }}>
+                    {showLabel ? formatDay(day) : ''}
+                  </div>
+
+                  {/* Timeline line */}
+                  <div style={{ width: '100%', height: '2px', background: isToday ? '#2c2c2a' : '#f1efe8', position: 'relative' }}>
+                    {isToday && (
+                      <div style={{ position: 'absolute', top: '-4px', left: '50%', transform: 'translateX(-50%)', width: '10px', height: '10px', borderRadius: '50%', background: '#2c2c2a' }} />
+                    )}
+                  </div>
+
+                  {/* Deadline dots */}
+                  {dayDeadlines.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                      {dayDeadlines.map((d, j) => (
+                        <div key={j} title={`${d.label} — ${d.detail}`} style={{ cursor: 'pointer' }}>
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.color }} />
+                          <div style={{ fontSize: '9px', color: d.color, fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap', maxWidth: '40px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {d.label}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
