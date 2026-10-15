@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
-import Documents from './Documents'
 import EWNDetail from './EWNDetail'
 
 function EarlyWarnings({ userRole, inline, onClose }) {

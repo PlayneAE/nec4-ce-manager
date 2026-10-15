@@ -7,20 +7,23 @@ function SubcontractDashboard({ subcontract, onClose, onNavigate }) {
   const [ewns, setEwns] = useState([])
   const [payments, setPayments] = useState([])
   const [amendments, setAmendments] = useState([])
+  const [programmes, setProgrammes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showReport, setShowReport] = useState(false)
 
   const fetchData = useCallback(async () => {
-    const [cesRes, ewnsRes, paymentsRes, amendmentsRes] = await Promise.all([
-      supabase.from('compensation_events').select('*').eq('subcontract_id', subcontract.id),
-      supabase.from('early_warnings').select('*').eq('subcontract_id', subcontract.id),
-      supabase.from('payment_cycles').select('*').eq('subcontract_id', subcontract.id).order('cycle_number', { ascending: false }),
-      supabase.from('contract_amendments').select('*').eq('subcontract_id', subcontract.id),
-    ])
+    const [cesRes, ewnsRes, paymentsRes, amendmentsRes, programmeRes] = await Promise.all([
+  supabase.from('compensation_events').select('*').eq('subcontract_id', subcontract.id),
+  supabase.from('early_warnings').select('*').eq('subcontract_id', subcontract.id),
+  supabase.from('payment_cycles').select('*').eq('subcontract_id', subcontract.id).order('cycle_number', { ascending: false }),
+  supabase.from('contract_amendments').select('*').eq('subcontract_id', subcontract.id),
+  supabase.from('programme_submissions').select('*').eq('subcontract_id', subcontract.id).order('submission_date', { ascending: false }),
+])
     setCes(cesRes.data || [])
     setEwns(ewnsRes.data || [])
     setPayments(paymentsRes.data || [])
     setAmendments(amendmentsRes.data || [])
+    setProgrammes(programmeRes.data || [])
     setLoading(false)
   }, [subcontract.id])
 
@@ -129,8 +132,10 @@ function SubcontractDashboard({ subcontract, onClose, onNavigate }) {
 </div>
 
         {/* Dashboard grid */}
-        <div style={{ padding: '24px 28px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+        <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+          {/* Row 1 - Contract Price */}
+<div></div>
           {/* Contract Price */}
           <div style={cardStyle}>
             <div style={labelStyle}>Contract price</div>
@@ -156,6 +161,51 @@ function SubcontractDashboard({ subcontract, onClose, onNavigate }) {
               <span style={{ fontWeight: 500 }}>{amendments.length}</span>
             </div>
           </div>
+
+</div>
+
+{/* Row 2 & 3 - remaining cards */}
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+          {/* Programme */}
+<div style={cardStyle}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+    <div style={labelStyle}>Programme</div>
+    {onNavigate && <span style={linkStyle} onClick={() => { onClose(); onNavigate('programme') }}>View register</span>}
+  </div>
+
+  {programmes.length === 0 ? (
+    <div style={{ fontSize: '13px', color: '#888780' }}>No submissions yet.</div>
+  ) : (() => {
+    const latest = programmes[0]
+    const current = programmes.find(p => p.is_current)
+    const movement = latest.completion_movement_days
+
+    return (
+      <>
+        <div style={rowStyle}>
+          <span style={{ color: '#5f5e5a' }}>Latest submission</span>
+          <span style={{ fontWeight: 500 }}>{new Date(latest.submission_date).toLocaleDateString('en-GB')}</span>
+        </div>
+        <div style={rowStyle}>
+          <span style={{ color: '#5f5e5a' }}>Latest accepted</span>
+          <span style={{ fontWeight: 500 }}>
+            {current ? new Date(current.submission_date).toLocaleDateString('en-GB') : '—'}
+          </span>
+        </div>
+        <div style={rowStyle}>
+          <span style={{ color: '#5f5e5a' }}>Planned completion</span>
+          <span style={{ fontWeight: 500 }}>{new Date(latest.planned_completion).toLocaleDateString('en-GB')}</span>
+        </div>
+        <div style={{ ...rowStyle, borderBottom: 'none' }}>
+          <span style={{ color: '#5f5e5a' }}>Movement</span>
+          <span style={{ fontWeight: 500, color: movement > 0 ? '#a32d2d' : movement < 0 ? '#0f6e56' : '#2c2c2a' }}>
+            {movement > 0 ? `+${movement} days` : movement < 0 ? `${movement} days` : '—'}
+          </span>
+        </div>
+      </>
+    )
+  })()}
+</div>
 
           {/* Contract Dates */}
           <div style={cardStyle}>
